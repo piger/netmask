@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"os"
 )
 
@@ -27,12 +28,11 @@ func netmaskContains(netmask, ip string) error {
 
 	for _, addr := range addrs {
 		if ip == addr {
-			os.Exit(0)
+			return nil
 		}
 	}
 
-	os.Exit(1)
-	return nil
+	return fmt.Errorf("%s not in %s", ip, netmask)
 }
 
 func usage() {
@@ -48,6 +48,9 @@ func run() error {
 	case 1:
 		return printNetmask(flag.Arg(0))
 	case 2:
+		if ip := net.ParseIP(flag.Arg(1)); ip == nil {
+			return fmt.Errorf("cannot parse IP address %q", flag.Arg(1))
+		}
 		return netmaskContains(flag.Arg(0), flag.Arg(1))
 	default:
 		usage()
@@ -58,7 +61,7 @@ func run() error {
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Println(err)
+		fmt.Fprintf(os.Stderr, "error: %s\n", err)
 		os.Exit(1)
 	}
 }

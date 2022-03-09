@@ -1,16 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"net"
 )
 
+// Code by Russ Cox: https://swtch.com/~rsc/
 // https://groups.google.com/g/golang-nuts/c/zlcYA4qk-94?pli=1
 
 func addressesFromCIDR(cidr string) ([]string, error) {
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing CIDR: %w", err)
+		return nil, err
 	}
 
 	var ips []string
