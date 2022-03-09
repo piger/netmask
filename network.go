@@ -4,21 +4,25 @@ import (
 	"net"
 )
 
-// Code by Russ Cox: https://swtch.com/~rsc/
+// Original code by Russ Cox: https://swtch.com/~rsc/
 // https://groups.google.com/g/golang-nuts/c/zlcYA4qk-94?pli=1
 
-func addressesFromCIDR(cidr string) ([]string, error) {
+func addressesFromCIDR(cidr string) (chan string, error) {
+	out := make(chan string)
+
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return nil, err
+		return out, err
 	}
 
-	var ips []string
-	for addr := ip.Mask(ipnet.Mask); ipnet.Contains(addr); incrementIP(addr) {
-		ips = append(ips, addr.String())
-	}
+	go func() {
+		for addr := ip.Mask(ipnet.Mask); ipnet.Contains(addr); incrementIP(addr) {
+			out <- addr.String()
+		}
+		close(out)
+	}()
 
-	return ips, nil
+	return out, nil
 }
 
 func incrementIP(ip net.IP) {

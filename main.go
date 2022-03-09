@@ -13,7 +13,7 @@ func printNetmask(netmask string) error {
 		return err
 	}
 
-	for _, addr := range addrs {
+	for addr := range addrs {
 		fmt.Println(addr)
 	}
 
@@ -26,7 +26,7 @@ func netmaskContains(netmask, ip string) error {
 		return err
 	}
 
-	for _, addr := range addrs {
+	for addr := range addrs {
 		if ip == addr {
 			return nil
 		}
