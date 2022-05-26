@@ -1,59 +1,51 @@
 package main
 
 import (
-	"flag"
+	"errors"
 	"fmt"
-	"net"
+	"net/netip"
 	"os"
 )
 
-func printNetmask(netmask string) error {
-	addrs, err := addressesFromCIDR(netmask)
-	if err != nil {
-		return err
+func printNetmask(prefix netip.Prefix) {
+	masked := prefix.Masked()
+
+	for ip := masked.Addr(); masked.Contains(ip); ip = ip.Next() {
+		fmt.Println(ip)
 	}
-
-	for addr := range addrs {
-		fmt.Println(addr)
-	}
-
-	return nil
-}
-
-func netmaskContains(netmask, ip string) error {
-	addrs, err := addressesFromCIDR(netmask)
-	if err != nil {
-		return err
-	}
-
-	for addr := range addrs {
-		if ip == addr {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%s not in %s", ip, netmask)
 }
 
 func usage() {
-	fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s <netmask> [address]\n", os.Args[0])
-	flag.PrintDefaults()
+	fmt.Fprintf(os.Stderr, "Usage: %s <netmask> [address]\n", os.Args[0])
 }
 
 func run() error {
-	flag.Usage = usage
-	flag.Parse()
+	narg := len(os.Args)
 
-	switch len(flag.Args()) {
-	case 1:
-		return printNetmask(flag.Arg(0))
+	if narg < 2 {
+		usage()
+		return errors.New("error: not enough arguments")
+	}
+
+	prefix, err := netip.ParsePrefix(os.Args[1])
+	if err != nil {
+		return err
+	}
+
+	switch narg {
 	case 2:
-		if ip := net.ParseIP(flag.Arg(1)); ip == nil {
-			return fmt.Errorf("cannot parse IP address %q", flag.Arg(1))
+		printNetmask(prefix)
+	case 3:
+		ip, err := netip.ParseAddr(os.Args[2])
+		if err != nil {
+			return err
 		}
-		return netmaskContains(flag.Arg(0), flag.Arg(1))
+		if !prefix.Contains(ip) {
+			return fmt.Errorf("%s does not contain %s", prefix.Masked(), ip)
+		}
 	default:
 		usage()
+		return errors.New("error: too many arguments")
 	}
 
 	return nil
@@ -61,7 +53,7 @@ func run() error {
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %s\n", err)
+		fmt.Fprintf(os.Stderr, "%s\n", err)
 		os.Exit(1)
 	}
 }
