@@ -1,0 +1,3 @@
+# simple case: when the IP matches the mask, the program prints no
+# output and exits with 0
+netmask 192.168.0.0/24 192.168.0.1
